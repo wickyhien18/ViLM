@@ -1,0 +1,92 @@
+id,group,subject,attribute,value
+1,động vật,con mèo,tiếng kêu,meo meo
+2,động vật,con chó,tiếng kêu,gâu gâu
+3,động vật,con gà trống,tiếng kêu,ò ó o
+4,động vật,con gà con,tiếng kêu,chíp chíp
+5,động vật,con vịt,tiếng kêu,cạp cạp
+6,động vật,con heo,tiếng kêu,ủn ỉn
+7,động vật,con bò,tiếng kêu,ùm bò
+8,động vật,con dê,tiếng kêu,be be
+9,động vật,con ếch,tiếng kêu,ộp ộp
+10,động vật,con chuột,tiếng kêu,chít chít
+11,động vật,con muỗi,tiếng kêu,vo ve
+12,động vật,con ngựa,tiếng kêu,hí hí
+13,màu sắc,quả chuối chín,màu sắc,vàng
+14,màu sắc,quả cà chua chín,màu sắc,đỏ
+15,màu sắc,cà rốt,màu sắc,cam
+16,màu sắc,lá cây,màu sắc,xanh
+17,màu sắc,cỏ,màu sắc,xanh
+18,màu sắc,sữa,màu sắc,trắng
+19,màu sắc,tuyết,màu sắc,trắng
+20,màu sắc,than,màu sắc,đen
+21,màu sắc,con quạ,màu sắc,đen
+22,màu sắc,bầu trời ban ngày,màu sắc,xanh
+23,màu sắc,quả dâu tây,màu sắc,đỏ
+24,màu sắc,hoa hướng dương,màu sắc,vàng
+25,thức ăn,con thỏ,ăn gì,cà rốt và cỏ
+26,thức ăn,con mèo,ăn gì,cá
+27,thức ăn,con chó,ăn gì,thịt và xương
+28,thức ăn,con bò,ăn gì,cỏ
+29,thức ăn,con trâu,ăn gì,cỏ
+30,thức ăn,con khỉ,ăn gì,chuối
+31,thức ăn,con gà,ăn gì,thóc
+32,thức ăn,con heo,ăn gì,cám
+33,thức ăn,con voi,ăn gì,cỏ và lá cây
+34,thức ăn,con chim sâu,ăn gì,sâu
+35,thức ăn,con ong,ăn gì,mật hoa
+36,số chân,con chó,số chân,bốn chân
+37,số chân,con mèo,số chân,bốn chân
+38,số chân,con bò,số chân,bốn chân
+39,số chân,con gà,số chân,hai chân
+40,số chân,con vịt,số chân,hai chân
+41,số chân,con chim,số chân,hai chân
+42,số chân,con nhện,số chân,tám chân
+43,số chân,con ruồi,số chân,sáu chân
+44,số chân,con kiến,số chân,sáu chân
+45,số chân,con người,số chân,hai chân
+46,nơi sống,con cá,sống ở đâu,dưới nước
+47,nơi sống,con ếch,sống ở đâu,trong ao hồ
+48,nơi sống,con chim,sống ở đâu,trong tổ trên cây
+49,nơi sống,con khỉ,sống ở đâu,trên cây trong rừng
+50,nơi sống,con cá voi,sống ở đâu,ở biển
+51,nơi sống,con ong,sống ở đâu,trong tổ ong
+52,nơi sống,con gà,sống ở đâu,trong chuồng
+53,nơi sống,con heo,sống ở đâu,trong chuồng
+54,nơi sống,con kiến,sống ở đâu,trong tổ dưới đất
+55,vị,quả chanh,vị,chua
+56,vị,đường,vị,ngọt
+57,vị,muối,vị,mặn
+58,vị,quả mướp đắng,vị,đắng
+59,vị,quả ớt,vị,cay
+60,vị,kẹo,vị,ngọt
+61,vị,quả me,vị,chua
+62,vị,cà phê,vị,đắng
+63,vị,mật ong,vị,ngọt
+64,vị,nước biển,vị,mặn
+65,đồ vật,cái bút,công dụng,viết
+66,đồ vật,cái kéo,công dụng,cắt giấy
+67,đồ vật,cái thìa,công dụng,xúc cơm và múc canh
+68,đồ vật,cái ô,công dụng,che mưa
+69,đồ vật,cái giường,công dụng,ngủ
+70,đồ vật,cái ghế,công dụng,ngồi
+71,đồ vật,đôi đũa,công dụng,gắp thức ăn
+72,đồ vật,bàn chải đánh răng,công dụng,đánh răng
+73,đồ vật,cái mũ,công dụng,đội đầu cho đỡ nắng
+74,đồ vật,đồng hồ,công dụng,xem giờ
+75,đồ vật,tủ lạnh,công dụng,giữ thức ăn lạnh
+76,đồ vật,xà phòng,công dụng,rửa tay cho sạch
+77,đồ vật,cái cốc,công dụng,uống nước
+78,cơ thể,đôi mắt,công dụng,nhìn
+79,cơ thể,đôi tai,công dụng,nghe
+80,cơ thể,cái mũi,công dụng,ngửi
+81,cơ thể,cái miệng,công dụng,ăn và nói
+82,cơ thể,đôi tay,công dụng,cầm nắm đồ vật
+83,cơ thể,đôi chân,công dụng,đi và chạy
+84,cơ thể,hàm răng,công dụng,nhai thức ăn
+85,cơ thể,cái lưỡi,công dụng,nếm vị
+86,thời tiết,trời mưa,nên làm gì,mang ô hoặc mặc áo mưa
+87,thời tiết,trời nắng,nên làm gì,đội mũ cho đỡ nắng
+88,thời tiết,trời lạnh,nên làm gì,mặc áo ấm
+89,thời tiết,trời nóng,nên làm gì,mặc áo mỏng và uống nhiều nước
+90,thời tiết,trời tối,nên làm gì,bật đèn lên
+91,thời tiết,trời có sấm sét,nên làm gì,vào trong nhà

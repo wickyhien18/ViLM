@@ -1,0 +1,71 @@
+{
+  "facts_total": 91,
+  "facts_train": 76,
+  "facts_heldout": 15,
+  "pairs": {
+    "train": 2721,
+    "val": 143,
+    "test_A": 262,
+    "test_B": 120,
+    "test_C": 15
+  },
+  "ood_share_in_train": 0.055,
+  "unique_syllables_in_train": 332,
+  "avg_question_syllables": 6.61,
+  "avg_answer_syllables": 6.37,
+  "approx_train_tokens_syllable_level": 40765,
+  "top_answer_openings": [
+    [
+      "mình dùng",
+      0.064
+    ],
+    [
+      "người ta",
+      0.057
+    ],
+    [
+      "tiếng kêu",
+      0.035
+    ],
+    [
+      "thức ăn",
+      0.032
+    ],
+    [
+      "nhà của",
+      0.03
+    ]
+  ],
+  "train_pairs_per_attribute": {
+    "màu sắc": 288,
+    "sống ở đâu": 311,
+    "ăn gì": 341,
+    "công dụng": 612,
+    "số chân": 307,
+    "tiếng kêu": 372,
+    "vị": 225,
+    "nên làm gì": 114
+  },
+  "test_B_rows_value_seen_in_train": {
+    "seen (có thể đoán đúng)": 48,
+    "unseen (không thể đoán)": 72
+  },
+  "heldout_facts": [
+    "6: con heo / tiếng kêu",
+    "8: con dê / tiếng kêu",
+    "18: sữa / màu sắc",
+    "20: than / màu sắc",
+    "33: con voi / ăn gì",
+    "34: con chim sâu / ăn gì",
+    "40: con vịt / số chân",
+    "44: con kiến / số chân",
+    "52: con gà / sống ở đâu",
+    "57: muối / vị",
+    "59: quả ớt / vị",
+    "65: cái bút / công dụng",
+    "80: cái mũi / công dụng",
+    "85: cái lưỡi / công dụng",
+    "86: trời mưa / nên làm gì"
+  ],
+  "seed": 42
+}
