@@ -110,3 +110,6 @@ docs.ray.io/
 
 # book and other source folders
 data/
+
+pyproject.toml
+uv.lock
