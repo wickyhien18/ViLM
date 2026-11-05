@@ -117,3 +117,5 @@ facts_personal.csv
 facts_backup_before_split.csv
 tokenizers
 facts.csv
+logs/
+checkpoints
