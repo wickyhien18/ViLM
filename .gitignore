@@ -113,3 +113,6 @@ data/
 
 pyproject.toml
 uv.lock
+facts_personal.csv
+facts_backup_before_split.csv
+tokenizers
