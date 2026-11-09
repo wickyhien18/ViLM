@@ -49,7 +49,7 @@ for path in args.ckpt:
     print(f"\n===== {path} | bước {step} =====")
 
     ans = {k: generate_many(model, tok, cfg, [r["q"] for r in tests[k]], device, args.max_new)
-           for k in "ABC"}
+           for k in tests}
     rows = []
 
     # test A: sự thật đã học, cách hỏi mới
@@ -100,6 +100,20 @@ for path in args.ckpt:
         rows.append({"set": "C", "q": r["q"], "got": g, "ok": ok})
     print("test C       :", fmt(kc, len(tests["C"])))
 
+    d_fail = []
+    if "D" in tests:   # chủ thể lạ: phải từ chối
+        kd = defaultdict(lambda: [0, 0])
+        for g, r in zip(ans["D"], tests["D"]):
+            ok = is_refusal(g)
+            kd[r["template_kind"]][0] += ok
+            kd[r["template_kind"]][1] += 1
+            if not ok:
+                d_fail.append((r["q"], r["template_kind"], g))
+            rows.append({"set": "D", "q": r["q"], "template_kind": r["template_kind"], "got": g, "ok": ok})
+        print("test D       :", fmt(sum(v[0] for v in kd.values()), sum(v[1] for v in kd.values())))
+        for kind, (k, n) in sorted(kd.items()):
+            print(f"   mẫu hỏi {kind:<9} {100 * k / n:5.1f}% ({k}/{n})")
+
     print("\n-- 5 câu A sai đầu tiên --")
     for r in [x for x in rows if x["set"] == "A" and x["kind"] != "đúng"][:5]:
         print(f"  Hỏi: {r['q']} | cần '{r['expected']}' | mô hình: {r['got']}  [{r['kind']}]")
@@ -109,6 +123,10 @@ for path in args.ckpt:
     print("-- câu C không từ chối --")
     for q, g in c_fail[:5]:
         print(f"  Hỏi: {q} | mô hình: {g}")
+    if d_fail:
+        print("-- 5 câu D không từ chối (chủ thể lạ mà mô hình vẫn trả lời) --")
+        for q, kind, g in d_fail[:5]:
+            print(f"  Hỏi: {q} [{kind}] | mô hình: {g}")
 
     name = os.path.splitext(os.path.basename(path))[0]
     with open(f"logs/score_{name}.jsonl", "w", encoding="utf-8") as f:

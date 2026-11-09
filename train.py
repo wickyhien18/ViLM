@@ -1,6 +1,8 @@
 # train.py (v3) - vòng lặp huấn luyện
 # v2: đo điểm A/B/C định kỳ, lưu checkpoint theo điểm A, lưu mốc định kỳ, hỗ trợ fp16 trên GPU.
 # v3: cấu hình mô hình lấy từ config.py, thêm --seed, in tên GPU.
+# Với tham số mặc định (không --score-every, không --amp) script này chạy y hệt train_v1.py cũ,
+# nên không cần giữ file v1: `python train.py --steps 3000` tái tạo lần chạy CPU ở giai đoạn 2.
 import argparse
 import csv
 import math
@@ -43,7 +45,7 @@ torch.manual_seed(args.seed)
 model = GPTModel(cfg).to(device)
 train = load_tokens("data/train.bin")
 val = load_tokens("data/val.bin")
-tests = load_tests()
+tests = load_tests() if args.score_every > 0 else None   # không đo A/B/C thì không cần file test
 
 # weight decay chỉ áp cho ma trận (ndim >= 2), không áp cho bias và chuẩn hóa
 decay = [q for q in model.parameters() if q.ndim >= 2]
@@ -87,7 +89,7 @@ os.makedirs(os.path.dirname(args.log) or ".", exist_ok=True)
 log = open(args.log, "w", newline="")
 writer = csv.writer(log)
 writer.writerow(["step", "train_loss", "val_loss", "lr", "grad_norm", "seconds",
-                 "A", "B_correct", "B_refuse", "B_invent", "C"])
+                 "A", "B_correct", "B_refuse", "B_invent", "C", "A_refused", "D"])
 
 best_val, best_a = float("inf"), -1
 run_loss, run_n = 0.0, 0
@@ -111,7 +113,8 @@ for step in range(args.steps + 1):
             line += "\n           " + format_score(s)
         print(line, flush=True)
         writer.writerow([step, tl, vl, lr_at(step), round(gn, 3), round(elapsed, 1)]
-                        + ([s["A"], s["B_correct"], s["B_refuse"], s["B_invent"], s["C"]] if s else [""] * 5))
+                        + ([s["A"], s["B_correct"], s["B_refuse"], s["B_invent"], s["C"], s["A_refused"], s.get("D", "")]
+                           if s else [""] * 7))
         log.flush()
         if vl < best_val:
             best_val = vl
@@ -142,4 +145,5 @@ for step in range(args.steps + 1):
               flush=True)
 
 save("ckpt_last.pt", args.steps, vl)
-print(f"xong: val tốt nhất {best_val:.4f} | A tốt nhất {best_a} | tổng {time.time() - t0:.0f}s")
+a_txt = f" | A tốt nhất {best_a}" if args.score_every > 0 else ""
+print(f"xong: val tốt nhất {best_val:.4f}{a_txt} | tổng {time.time() - t0:.0f}s")

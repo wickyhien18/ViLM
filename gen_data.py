@@ -210,6 +210,38 @@ OOD_TEST = [
 ]
 
 
+# ---- v2: câu từ chối viết theo mẫu hỏi QUEN, với chủ thể chưa có trong bảng sự thật ----
+# Mục đích: câu ngoài phạm vi và câu trong phạm vi dùng cùng cách diễn đạt, nên cách hỏi không còn là
+# dấu hiệu để từ chối; chỉ còn nội dung (chủ thể có trong bảng hay không).
+# Mỗi nhóm có danh sách "train" và "test" KHÔNG trùng nhau; chủ thể nào đã có trong facts.csv bị loại tự động.
+_ANIMALS = {
+    "train": ["con voi", "con sư tử", "con hổ", "con hươu cao cổ", "con cá heo", "con rùa", "con thỏ",
+              "con dê", "con cừu", "con sói", "con gấu", "con cáo", "con nai", "con lạc đà"],
+    "test": ["con cá sấu", "con báo", "con tê giác", "con hà mã", "con đà điểu", "con công",
+             "con chim cánh cụt", "con ếch", "con cua", "con ốc sên"],
+}
+_FRUITS = {
+    "train": ["quả dưa hấu", "quả nho", "quả dâu tây", "quả xoài", "quả bưởi", "quả ổi", "quả cà tím",
+              "quả mận", "quả lê", "quả đào"],
+    "test": ["quả chanh", "quả cam", "quả dứa", "quả vải", "quả nhãn", "quả mít", "quả sầu riêng",
+             "quả măng cụt"],
+}
+_TOOLS = {
+    "train": ["cái bàn", "cái ghế", "cái bút", "cái cốc", "cái kéo", "cái chổi", "cái thìa", "cái đĩa",
+              "cái nồi", "cái quạt", "cái gối", "cái khăn"],
+    "test": ["cái gương", "cái lược", "cái chăn", "cái kính", "cái đồng hồ", "cái tủ", "cái dao", "cái bát"],
+}
+_SITUATIONS = {
+    "train": ["đến ngày 8/3", "đến ngày 20/10", "đến Tết Trung thu", "trời nắng", "trời lạnh",
+              "trời có sương mù", "trời gió to"],
+    "test": ["đến ngày 20/11", "đến ngày 1/6", "trời có bão", "trời nóng", "trời rét đậm"],
+}
+POOLS = {
+    "tiếng kêu": _ANIMALS, "ăn gì": _ANIMALS, "số chân": _ANIMALS, "sống ở đâu": _ANIMALS,
+    "màu sắc": _FRUITS, "vị": _FRUITS, "công dụng": _TOOLS, "nên làm gì": _SITUATIONS,
+}
+
+
 def norm(s: str) -> str:
     """Chuẩn hóa Unicode NFC (bắt buộc với tiếng Việt) và gọn khoảng trắng."""
     return re.sub(r"\s+", " ", unicodedata.normalize("NFC", s)).strip()
@@ -246,6 +278,55 @@ def syllables(text: str):
     return re.findall(r"\w+", text.lower())
 
 
+def _contains(hay: str, needle: str) -> bool:
+    return re.search(rf"(?<!\w){re.escape(needle)}(?!\w)", hay) is not None
+
+
+def usable_pool(pool, known_forms):
+    """Bỏ chủ thể đã có trong bảng, và cả chủ thể chứa hoặc nằm trong một chủ thể của bảng theo ranh giới từ
+    (ví dụ 'con chim cánh cụt' so với 'con chim', 'con cá heo' so với 'con cá'): những chủ thể đó mơ hồ,
+    câu trả lời mong đợi (từ chối) không còn rõ ràng."""
+    known_low = {k.lower() for k in known_forms}
+    out = []
+    for s in pool:
+        forms = [f.lower() for f in subject_forms(s)]
+        if any(f == k or _contains(f, k) or _contains(k, f) for f in forms for k in known_low):
+            continue
+        out.append(s)
+    return out
+
+
+def make_unknown_refusals(rng2, known_forms, per_attr):
+    """Train v2: câu hỏi theo mẫu QUEN (không dùng 2 mẫu giữ lại cho test_A) với chủ thể chưa biết -> từ chối."""
+    rows = []
+    for attr, tpl in TEMPLATES.items():
+        pool = usable_pool(POOLS[attr]["train"], known_forms)
+        if len(pool) < 4:
+            print(f"CẢNH BÁO: thuộc tính {attr!r} chỉ còn {len(pool)} chủ thể lạ để làm câu từ chối")
+        qs = sorted({render(qt, s, "") for s0 in pool for s in subject_forms(s0)
+                     for qt in tpl["q"][:-N_HELDOUT_Q]})
+        rng2.shuffle(qs)
+        for q in qs[:per_attr]:
+            rows.append({"q": q, "a": rng2.choice(REFUSALS), "kind": "ood_unknown", "fact_id": None,
+                         "attribute": None, "value": None})
+    return rows
+
+
+def make_test_d(rng2, known_forms, per_attr):
+    """test_D: chủ thể lạ (không dùng ở train) với mẫu hỏi quen hoặc mẫu giữ lại; mong đợi từ chối."""
+    rows = []
+    for attr, tpl in TEMPLATES.items():
+        pool = usable_pool(POOLS[attr]["test"], known_forms)
+        n_fam = len(tpl["q"]) - N_HELDOUT_Q
+        cands = sorted({(render(qt, s, ""), "familiar" if i < n_fam else "novel")
+                        for s0 in pool for s in subject_forms(s0) for i, qt in enumerate(tpl["q"])})
+        rng2.shuffle(cands)
+        for q, kind in cands[:per_attr]:
+            rows.append({"q": q, "a": REFUSALS[0], "attribute": attr, "template_kind": kind,
+                         "text": make_text(q, REFUSALS[0])})
+    return rows
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--facts", default="facts.csv")
@@ -255,6 +336,10 @@ def main():
     ap.add_argument("--val-frac", type=float, default=0.05)
     ap.add_argument("--heldout-frac", type=float, default=0.15, help="tỉ lệ sự thật giữ lại cho test_B")
     ap.add_argument("--test-b-per-fact", type=int, default=8)
+    ap.add_argument("--v2", action="store_true",
+                    help="thêm câu từ chối theo mẫu hỏi quen (chủ thể lạ) vào train và tạo test_D; test_A/B/C giữ nguyên")
+    ap.add_argument("--v2-pairs-per-attr", type=int, default=60, help="số cặp từ chối v2 mỗi thuộc tính")
+    ap.add_argument("--test-d-per-attr", type=int, default=12, help="số dòng test_D mỗi thuộc tính")
     args = ap.parse_args()
 
     rng = random.Random(args.seed)
@@ -315,6 +400,19 @@ def main():
     rng.shuffle(pairs)
     n_val = int(len(pairs) * args.val_frac)
     val_rows, train_rows = pairs[:n_val], pairs[n_val:]
+    test_d = []
+    if args.v2:
+        # RNG riêng để test_A/B/C giống hệt lần chạy không có --v2 (rng chính không bị dùng thêm)
+        rng2 = random.Random(args.seed + 1000)
+        known_forms = {frm for x in facts for frm in subject_forms(x["subject"])}
+        extra = make_unknown_refusals(rng2, known_forms, args.v2_pairs_per_attr)
+        rng2.shuffle(extra)
+        n_val_x = int(len(extra) * args.val_frac)
+        val_rows = val_rows + extra[:n_val_x]
+        train_rows = train_rows + extra[n_val_x:]
+        rng2.shuffle(train_rows)
+        rng2.shuffle(val_rows)
+        test_d = make_test_d(rng2, known_forms, args.test_d_per_attr)
     for r in train_rows + val_rows:
         r["text"] = make_text(r["q"], r["a"])
 
@@ -359,12 +457,15 @@ def main():
     assert not {r["fact_id"] for r in test_b} & train_fact_ids, "test_B có sự thật nằm trong train"
     assert not {r["q"] for r in test_c} & train_q, "test_C có câu hỏi trùng train"
     assert not set(OOD_TRAIN) & set(OOD_TEST), "OOD train/test trùng nhau"
+    assert not {r["q"] for r in test_d} & train_q, "test_D có câu hỏi trùng train"
 
     write_jsonl(out / "train.jsonl", train_rows)
     write_jsonl(out / "val.jsonl", val_rows)
     write_jsonl(out / "test_A.jsonl", test_a)
     write_jsonl(out / "test_B.jsonl", test_b)
     write_jsonl(out / "test_C.jsonl", test_c)
+    if args.v2:
+        write_jsonl(out / "test_D.jsonl", test_d)
 
     # 7) Thống kê để tự kiểm tra bằng mắt.
     all_text = " ".join(r["text"] for r in train_rows)
@@ -394,6 +495,14 @@ def main():
         "heldout_facts": [f"{x['id']}: {x['subject']} / {x['attribute']}" for x in held_facts],
         "seed": args.seed,
     }
+    if args.v2:
+        stats["v2"] = {
+            "ood_unknown_pairs_in_train": sum(1 for r in train_rows if r["kind"] == "ood_unknown"),
+            "ood_unknown_distinct_questions": len({r["q"] for r in train_rows if r["kind"] == "ood_unknown"}),
+            "refusal_share_in_train": round(sum(1 for r in train_rows if r["kind"] != "fact") / len(train_rows), 3),
+            "test_D_rows": len(test_d),
+            "test_D_by_template_kind": dict(Counter(r["template_kind"] for r in test_d)),
+        }
     (out / "stats.json").write_text(json.dumps(stats, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps(stats, ensure_ascii=False, indent=2))
 

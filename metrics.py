@@ -1,6 +1,7 @@
 # metrics.py - đo điểm test A, B, C bằng cách sinh câu theo lô (nhanh hơn score.py)
 # Dùng chung cho train.py. Chạy riêng: uv run python metrics.py --ckpt checkpoints/ckpt_last.pt
 import json
+import os
 import re
 import unicodedata
 from collections import defaultdict
@@ -18,7 +19,10 @@ def load_jsonl(path):
 
 
 def load_tests(data_dir="data"):
-    return {k: load_jsonl(f"{data_dir}/test_{k}.jsonl") for k in "ABC"}
+    tests = {k: load_jsonl(f"{data_dir}/test_{k}.jsonl") for k in "ABC"}
+    if os.path.exists(f"{data_dir}/test_D.jsonl"):   # chỉ có khi dữ liệu sinh bằng gen_data.py --v2
+        tests["D"] = load_jsonl(f"{data_dir}/test_D.jsonl")
+    return tests
 
 
 def has_value(answer, value):
@@ -72,9 +76,10 @@ def generate_many(model, tok, cfg, questions, device, max_new=40):
 def score_model(model, tok, cfg, tests, device, max_new=40):
     refusals = {norm(r["a"]) for r in tests["C"]}
     ans = {k: generate_many(model, tok, cfg, [r["q"] for r in tests[k]], device, max_new)
-           for k in "ABC"}
+           for k in tests}
 
     a_ok = sum(has_value(g, r["value"]) for g, r in zip(ans["A"], tests["A"]))
+    a_refused = sum(is_refusal(g) for g in ans["A"])   # số câu A (đúng phạm vi) bị từ chối
 
     b = {"correct": 0, "refuse": 0, "invent": 0, "n": 0}
     for g, r in zip(ans["B"], tests["B"]):
@@ -89,17 +94,24 @@ def score_model(model, tok, cfg, tests, device, max_new=40):
             b["invent"] += 1
 
     c_ok = sum(is_refusal(g, refusals) for g in ans["C"])
-    return {
-        "A": a_ok, "A_n": len(tests["A"]),
+    out = {
+        "A": a_ok, "A_n": len(tests["A"]), "A_refused": a_refused,
         "B_correct": b["correct"], "B_refuse": b["refuse"], "B_invent": b["invent"], "B_n": b["n"],
         "C": c_ok, "C_n": len(tests["C"]),
     }
+    if "D" in tests:   # chủ thể lạ: phải từ chối
+        out["D"] = sum(is_refusal(g) for g in ans["D"])
+        out["D_n"] = len(tests["D"])
+    return out
 
 
 def format_score(s):
-    return (f"A {s['A']}/{s['A_n']} ({100 * s['A'] / s['A_n']:.1f}%) | "
+    line = (f"A {s['A']}/{s['A_n']} ({100 * s['A'] / s['A_n']:.1f}%, từ chối nhầm {s['A_refused']}) | "
             f"B-unseen: đúng {s['B_correct']}, từ chối {s['B_refuse']}, bịa {s['B_invent']} (trên {s['B_n']}) | "
             f"C {s['C']}/{s['C_n']}")
+    if "D" in s:
+        line += f" | D {s['D']}/{s['D_n']}"
+    return line
 
 
 if __name__ == "__main__":
