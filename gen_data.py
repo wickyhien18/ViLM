@@ -326,6 +326,54 @@ def make_test_d(rng2, known_forms, per_attr):
                          "text": make_text(q, REFUSALS[0])})
     return rows
 
+# ---- v3: thêm cách hỏi (chỉ dùng ở TRAIN) để cách diễn đạt không còn là dấu hiệu trả lời hay từ chối ----
+# Không được giống 2 mẫu giữ lại của test_A (tránh "Nghe/Nhìn/Nói/Nếm thử xem", "Hãy đếm xem", "Khi kêu",
+# "Bữa ăn của", "Nơi ở của", "đi bằng mấy chân", "thường có màu nào", "Mình dùng ... để làm gì";
+# riêng "nên làm gì" thì tránh "Hãy cho biết").
+EXTRA_Q = {
+    "tiếng kêu": ["Cho mình hỏi {S} kêu thế nào?", "{S} kêu tiếng gì vậy?", "Bạn ơi, {S} kêu như thế nào?",
+                  "Mình muốn biết {S} kêu ra sao.", "Cho mình biết {S} kêu như thế nào nhé?"],
+    "màu sắc": ["Cho mình hỏi {S} có màu gì?", "Bạn ơi, {S} màu gì vậy?", "Màu sắc của {S} là gì?",
+                "Mình muốn biết {S} có màu gì.", "Cho mình biết {S} màu gì nhé?"],
+    "ăn gì": ["Cho mình hỏi {S} ăn gì?", "Bạn ơi, {S} ăn gì vậy?", "{S} hay ăn món gì?",
+              "Mình muốn biết {S} ăn gì.", "Cho mình biết {S} thường ăn gì nhé?"],
+    "số chân": ["Cho mình hỏi {S} có mấy chân?", "Bạn ơi, {S} có bao nhiêu chân vậy?", "{S} có mấy chân nhỉ?",
+                "Mình muốn biết {S} có mấy chân.", "Cho mình biết {S} có bao nhiêu chân nhé?"],
+    "sống ở đâu": ["Cho mình hỏi {S} sống ở đâu?", "Bạn ơi, {S} sống ở đâu vậy?", "{S} hay sống ở chỗ nào?",
+                   "Mình muốn biết {S} sống ở đâu.", "Cho mình biết {S} thường sống ở đâu nhé?"],
+    "vị": ["Cho mình hỏi {S} có vị gì?", "Bạn ơi, {S} vị gì vậy?", "Vị của {S} ra sao?",
+           "Mình muốn biết {S} có vị gì.", "Cho mình biết {S} có vị gì nhé?"],
+    "công dụng": ["Cho mình hỏi {S} dùng để làm gì?", "Bạn ơi, {S} dùng làm gì vậy?", "Công dụng của {S} là gì?",
+                  "Mình muốn biết {S} dùng để làm gì.", "Cho mình biết {S} dùng để làm gì nhé?"],
+    "nên làm gì": ["Cho mình hỏi {S} thì nên làm gì?", "Bạn ơi, {S} thì nên làm gì vậy?", "{S} thì mình phải làm gì?",
+                   "Mình muốn biết {S} thì nên làm gì.", "Cho mình biết {S} thì nên làm gì nhé?"],
+}
+
+
+def make_extra_template_pairs(rng3, train_facts, per_fact):
+    rows = []
+    for fact in train_facts:
+        tpl = TEMPLATES[fact["attribute"]]
+        combos = sorted({(render(qt, s, fact["value"]), render(at, s, fact["value"]))
+                         for s in subject_forms(fact["subject"])
+                         for qt in EXTRA_Q[fact["attribute"]] for at in tpl["a"]})
+        rng3.shuffle(combos)
+        for q, a in combos[:per_fact]:
+            rows.append({"q": q, "a": a, "kind": "fact", "fact_id": fact["id"],
+                         "attribute": fact["attribute"], "value": fact["value"]})
+    return rows
+
+
+def make_extra_template_refusals(rng3, known_forms, per_attr):
+    rows = []
+    for attr in TEMPLATES:
+        pool = usable_pool(POOLS[attr]["train"], known_forms)
+        qs = sorted({render(qt, s, "") for s0 in pool for s in subject_forms(s0) for qt in EXTRA_Q[attr]})
+        rng3.shuffle(qs)
+        for q in qs[:per_attr]:
+            rows.append({"q": q, "a": rng3.choice(REFUSALS), "kind": "ood_unknown", "fact_id": None,
+                         "attribute": None, "value": None})
+    return rows
 
 def main():
     ap = argparse.ArgumentParser()
@@ -340,7 +388,12 @@ def main():
                     help="thêm câu từ chối theo mẫu hỏi quen (chủ thể lạ) vào train và tạo test_D; test_A/B/C giữ nguyên")
     ap.add_argument("--v2-pairs-per-attr", type=int, default=60, help="số cặp từ chối v2 mỗi thuộc tính")
     ap.add_argument("--test-d-per-attr", type=int, default=12, help="số dòng test_D mỗi thuộc tính")
+    ap.add_argument("--v3", action="store_true", help="(cần --v2) thêm cách hỏi EXTRA_Q vào train")
+    ap.add_argument("--v3-per-fact", type=int, default=24)
+    ap.add_argument("--v3-refusals-per-attr", type=int, default=60)
     args = ap.parse_args()
+    if args.v3 and not args.v2:
+        raise SystemExit("--v3 cần đi kèm --v2")
 
     rng = random.Random(args.seed)
     out = Path(args.out)
@@ -413,6 +466,17 @@ def main():
         rng2.shuffle(train_rows)
         rng2.shuffle(val_rows)
         test_d = make_test_d(rng2, known_forms, args.test_d_per_attr)
+    if args.v3:
+        rng3 = random.Random(args.seed + 2000)   # RNG riêng: train cũ và test không đổi
+        known3 = {frm for x in facts for frm in subject_forms(x["subject"])}
+        extra3 = (make_extra_template_pairs(rng3, train_facts, args.v3_per_fact)
+                  + make_extra_template_refusals(rng3, known3, args.v3_refusals_per_attr))
+        rng3.shuffle(extra3)
+        n_val3 = int(len(extra3) * args.val_frac)
+        val_rows = val_rows + extra3[:n_val3]
+        train_rows = train_rows + extra3[n_val3:]
+        rng3.shuffle(train_rows)
+        rng3.shuffle(val_rows)
     for r in train_rows + val_rows:
         r["text"] = make_text(r["q"], r["a"])
 
@@ -503,6 +567,8 @@ def main():
             "test_D_rows": len(test_d),
             "test_D_by_template_kind": dict(Counter(r["template_kind"] for r in test_d)),
         }
+    if args.v3:
+        stats["v3"] = {"extra_pairs_in_train": len(extra3) - n_val3}
     (out / "stats.json").write_text(json.dumps(stats, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps(stats, ensure_ascii=False, indent=2))
 
